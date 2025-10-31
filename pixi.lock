@@ -293,7 +293,7 @@ packages:
 - pypi: ./
   name: btransformer
   version: 0.0.1
-  sha256: 41e9a36d900860dd399def01eb9c0a13c1f323e43134694955ea4e10e5d5f92f
+  sha256: 0922cb30fa1c731af48e718deca09ca58a8f90df88ec9f0d598cf6341df957e3
   requires_dist:
   - numpy>=1.26.4
   - matplotlib>=3.8.4
@@ -301,6 +301,7 @@ packages:
   - torch>=2.0.0
   - torchvision
   - lerobot
+  - pandas
   - toml
   requires_python: '>=3.10,<3.13'
   editable: true

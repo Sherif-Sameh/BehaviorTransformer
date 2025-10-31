@@ -8,6 +8,8 @@ dependencies = [
     "matplotlib >= 3.8.4",
     "fire >= 0.6.0",
     "torch >= 2.0.0",
+    "torchvision",
+    "lerobot",
     "toml",
 ]
 [tool.pixi.workspace]

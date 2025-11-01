@@ -26,7 +26,7 @@ class Clusterer(ABC, nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.register_buffer("centers", torch.empty(0))
+        self.register_buffer("_centers", torch.empty(0))
     
     @property
     def act_dim(self) -> int:
@@ -35,7 +35,7 @@ class Clusterer(ABC, nn.Module):
         Returns:
             Action dimension (A).
         """
-        return self.centers.shape[-1]
+        return self._centers.shape[-1]
     
     @property
     def centers(self) -> FloatTensor:
@@ -44,7 +44,7 @@ class Clusterer(ABC, nn.Module):
         Returns:
             (n_clusters, A) Tensor of cluster center locations.
         """
-        return self.centers.clone()
+        return self._centers.clone()
 
     @abstractmethod
     def forward(self, acts: FloatTensor) -> FloatTensor:
@@ -75,10 +75,10 @@ class Clusterer(ABC, nn.Module):
         assert acts.ndim == 3, f"Actions must be a 3-dim tensor, got {acts.ndim} dims."
         assert acts.shape[-1] == self.act_dim, \
             f"Action dimension does not match. Expected {self.act_dim}, got {acts.shape[-1]}."
-        centers = self.centers.unsqueeze(0)     # (1, n_clusters, A)
-        dists = sqr_l2_norm(acts, centers)      # (B, T, n_clusters)
-        bins = torch.argmin(dists, dim=-1)      # (B, T)
-        offsets = acts - self.centers[bins]     # (B, T, A)
+        centers = self._centers.unsqueeze(0)     # (1, n_clusters, A)
+        dists = sqr_l2_norm(acts, centers)       # (B, T, n_clusters)
+        bins = torch.argmin(dists, dim=-1)       # (B, T)
+        offsets = acts - self._centers[bins]     # (B, T, A)
         return bins, offsets
 
     @torch.no_grad
@@ -96,5 +96,5 @@ class Clusterer(ABC, nn.Module):
         assert offsets.ndim == 3, f"Offsets must be a 3-dim tensor, got {offsets.ndim} dims."
         assert offsets.shape[-1] == self.act_dim, \
             f"Offset dimension does not match. Expected {self.act_dim}, got {offsets.shape[-1]}."
-        acts = self.centers[bins] + offsets  # (B, T, A)
+        acts = self._centers[bins] + offsets  # (B, T, A)
         return acts

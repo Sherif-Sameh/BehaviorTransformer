@@ -64,5 +64,5 @@ class KMeansClusterer(Clusterer):
             if delta < self.tol:
                 break
         
-        self.centers.copy_(centers)
+        self._centers = centers
         return centers

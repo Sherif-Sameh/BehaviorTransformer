@@ -61,4 +61,4 @@ class Logger(ABC):
         """
         if self._filter is None:
             return metrics
-        return {k: v for k, v in metrics.items() if k in self._filter}
+        return {k: v for k, v in metrics.items() if self._filter in k}

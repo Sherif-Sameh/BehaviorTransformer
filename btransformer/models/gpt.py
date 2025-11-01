@@ -8,6 +8,7 @@ Largely adapted from Andrej Karpathy's implementation of minGPT available at:
 
 import math
 from functools import partial
+from pathlib import Path
 
 import torch
 import torch.nn as nn
@@ -37,6 +38,7 @@ class PolicyGPT(Model):
         attn_pdrop: Dropout probability for attention weights.
         proj_pdrop: Dropout probability for transformer output projection.
     """
+    DEFAULT_PATH = Path(__file__).parent / "checkpoints/policyGPT.pt"
 
     def __init__(
         self,
@@ -179,3 +181,35 @@ class PolicyGPT(Model):
         decay = [param_dict[name] for name in sorted(list(decay))]
         no_decay = [param_dict[name] for name in sorted(list(no_decay))]
         return decay, no_decay
+    
+    def save(self, path: Path | None = None) -> None:
+        """Save the model's state dict to the specified path.
+        
+        Args:
+            path: Optional path to save the model checkpoint. Default to `DEFAULT_PATH` if not
+                provided.
+        """
+        path = self.DEFAULT_PATH if path is None else path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint = {
+            "state_dict": self.state_dict(),
+        }
+        torch.save(checkpoint, path)
+    
+    def load(self, path: Path | None = None) -> None:
+        """Load the model's state dict from the specified path.
+        
+        Args:
+            path: Optional path to load the model checkpoint from. If not provided, `DEFAULT_PATH`
+                is checked for existing compatible checkpoints.
+        """
+        load_path = self.DEFAULT_PATH if path is None else path
+        if not load_path.exists():
+            raise FileNotFoundError(
+                f"No checkpoints at {str(path)} or default path {str(self.DEFAULT_PATH)}."
+            )
+        checkpoint = torch.load(path, map_location="cpu", weights_only=True)
+        try:
+            self.load_state_dict(checkpoint["state_dict"])
+        except RuntimeError as e:
+            print(f"Error while loading checkpoint from {str(load_path)}: {e}")

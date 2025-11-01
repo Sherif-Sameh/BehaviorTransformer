@@ -35,4 +35,6 @@ class ComposeLogger(Logger):
         """
         # TODO: Optimize to avoid redundant calls to `metrics.compute()` across all loggers.
         for logger in self.loggers:
-            logger.log(step, metrics, reset=reset)
+            logger.log(step, metrics, reset=False)
+        if reset:
+            metrics.reset()

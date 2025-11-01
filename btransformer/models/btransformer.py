@@ -38,7 +38,7 @@ class BehaviorTransformer(Model):
 
     def __init__(self, policy: PolicyGPT, clusterer: Clusterer):
         super().__init__()
-        assert self.clusterer.centers.numel() > 0, \
+        assert clusterer.centers.numel() > 0, \
             "Clusterer must be initialized with cluster centers."
         assert policy.act_dim == clusterer.act_dim, \
             "Policy action dimension must match clusterer action dimension."
@@ -135,7 +135,7 @@ class BehaviorTransformerMixedObs(BehaviorTransformer):
         super().__init__(policy, clusterer)
         self.img_encoder = img_encoder
         for param in self.img_encoder.parameters():
-            param.requires_grad_(mode=False)  # Ensure image encoder weights are frozen
+            param.requires_grad = False  # Ensure image encoder weights are frozen
     
     def forward(self, img_obs: Tensor, prop_obs: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         """Forward pass for the BTransformer model with mixed observations.

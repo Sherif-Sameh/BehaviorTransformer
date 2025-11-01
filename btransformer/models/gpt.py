@@ -108,8 +108,8 @@ class PolicyGPT(Model):
                 nn.init.zeros_(module.bias)
                 nn.init.ones_(module.weight)
             case _:
-                raise TypeError(f"Unrecognized module type: {type(module)}")
-    
+                pass
+            
     def forward(self, obs: Tensor) -> tuple[Tensor, Tensor]:
         """Forward pass for the GPT-based policy model.
         

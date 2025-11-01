@@ -18,18 +18,17 @@ class AccumulatorMetric(Metric):
 
     Args:
         argname: Name of the argument to accumulate from during metric updates.
-        red: Reduction method for computing metric.
-            Must be one of "sum", "mean", "std", "max", "min".
+        red: Reduction method for computing metric. Must be one of "sum", "mean", "cnt".
         name: Optional name for the metric. If None, name is determined from argname and red.
     """
 
     def __init__(
         self,
         argname: str,
-        red: Literal["sum", "mean", "std", "max", "min"],
+        red: Literal["sum", "mean", "cnt"],
         name: str | None = None,
     ):
-        assert red in ["sum", "mean", "std", "max", "min"], \
+        assert red in ["sum", "mean", "cnt"], \
             f"Reduction method {red} not supported."
         name = argname.replace("_", " ").title() + f"({red.title()})" if name is None else name
         super().__init__(name=name)
@@ -47,16 +46,12 @@ class AccumulatorMetric(Metric):
             return torch.tensor(float('nan'))
         match self.red:
             case "sum":
-                return self.state.sum()
+                return self.state
             case "mean":
-                return self.state.mean()
-            case "std":
-                return self.state.std()
-            case "max":
-                return self.state.amax()
-            case "min":
-                return self.state.amin()
-
+                return self.state / self.count
+            case "cnt":
+                return torch.tensor(self.count, device=self.state.device)
+            
     def reset(self) -> None:
         """Resets the internal state and count to their default values."""
         self.state = None
@@ -65,7 +60,8 @@ class AccumulatorMetric(Metric):
     def update(self, **kwargs) -> None:
         """Updates the internal state and count with the provided value.
 
-        **Warning**: The provided value's shape **must be broadcastable** to the existing state's shape.
+        **Warning**: The provided value is reduced with `sum()` before being added to the existing
+        state.
         
         Args:
             **kwargs: Keyword arguments containing input tensor data to update metric with.
@@ -74,6 +70,6 @@ class AccumulatorMetric(Metric):
         if value is None:
             return  # There's nothing to update.
         if self.state is None:
-            self.state = torch.zeros_like(value)
-        self.state += value
-        self.count += 1
+            self.state = torch.zeros(1, device=value.device)
+        self.state += value.sum()
+        self.count += value.numel()

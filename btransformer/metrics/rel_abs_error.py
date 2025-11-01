@@ -19,8 +19,7 @@ class RelAbsErrorMetric(AccumulatorMetric):
     Args:
         pred_argname: Name of the argument containing predictions during metric updates.
         targ_argname: Name of the argument containing targets during metric updates.
-        red: Reduction method for computing metric.
-            Must be one of "sum", "mean", "std", "max", "min".
+        red: Reduction method for computing metric. Must be one of "sum", "mean", "cnt".
         name: Optional name for the metric. If None, name is determined from both argnames and red.
     """
 
@@ -28,7 +27,7 @@ class RelAbsErrorMetric(AccumulatorMetric):
         self,
         pred_argname: str,
         targ_argname: str,
-        red: Literal["sum", "mean", "std", "max", "min"],
+        red: Literal["sum", "mean", "cnt"],
         name: str | None = None,
     ):
         pred_name = pred_argname.replace('_', ' ').title()
@@ -42,8 +41,8 @@ class RelAbsErrorMetric(AccumulatorMetric):
     def update(self, **kwargs) -> None:
         """Updates the internal state and count with the provided value.
 
-        **Warning**: The provided tensors' shapes **must be broadcastable** to each other and the
-        existing state's shape.
+        **Warning**: The provided tensors' shapes **must be broadcastable** to each other. The rel
+        abs error's shape is reduced with `sum()` before being added to the existing state.
         
         Args:
             **kwargs: Keyword arguments containing input tensor data to update metric with.
@@ -54,6 +53,6 @@ class RelAbsErrorMetric(AccumulatorMetric):
             return  # There's nothing to update.
         value = torch.abs(pred - targ) / (torch.abs(targ) + 1e-8)
         if self.state is None:
-            self.state = torch.zeros_like(value)
-        self.state += value
-        self.count += 1
+            self.state = torch.zeros(1, device=value.device)
+        self.state += value.sum()
+        self.count += value.numel()

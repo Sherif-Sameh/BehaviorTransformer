@@ -25,6 +25,8 @@ class CSVLogger(Logger):
             f"CSVLogger requires a .csv file extension. Got {self.path.suffix} instead."
         self.path = self.path.resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        if self.path.exists():
+            self.path.unlink()  # Remove old logs
 
     def flush(self) -> None:
         """Saves stored logs to a CSV file."""

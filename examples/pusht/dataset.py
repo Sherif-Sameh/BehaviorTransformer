@@ -53,7 +53,9 @@ class PushTDataset:
         
         # Set transforms for observations and actions
         self.img_tf = Normalize(mean=self.IMG_MEAN, std=self.IMG_STD)
-        self.prop_tf = lambda x: partial(normalize_prop_obs, mean=self.PROP_MEAN, std=self.PROP_STD)(x)
+        self.prop_tf = lambda x: partial(
+            normalize_prop_obs, mean=self.PROP_MEAN, std=self.PROP_STD
+        )(x / 512.)
         self.action_tf = partial(rescale_actions, acts_low=self.ACTION_LOW, acts_high=self.ACTION_HIGH)
 
         # Calculate dataset metadata needed for sampling

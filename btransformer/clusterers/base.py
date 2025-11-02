@@ -3,6 +3,7 @@ Contains base abstract class for clusterers in the btransformer library.
 """
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 import torch
 import torch.nn as nn
@@ -98,3 +99,33 @@ class Clusterer(ABC, nn.Module):
             f"Offset dimension does not match. Expected {self.act_dim}, got {offsets.shape[-1]}."
         acts = self._centers[bins] + offsets  # (B, T, A)
         return acts
+    
+    def save(self, path: Path | None = None) -> None:
+        """Save the module's state dict to the specified path.
+        
+        Args:
+            path: Optional path to save the model checkpoint. Defaults to a 'checkpoints'
+                directory within the 'clusterers' directory if not provided.
+        """
+        path = Path(__file__).parent / "checkpoints/clusterer.pt" if path is None else path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint = {
+            "centers": self._centers,  # Store centers explicitly
+        }
+        torch.save(checkpoint, path)
+
+    def load(self, path: Path | None = None) -> None:
+        """Load the module's state dict from the specified path.
+        
+        Args:
+            path: Optional path to load the model checkpoint from. Defaults to a 'checkpoints'
+                directory within the 'clusterers' directory if not provided.
+        """
+        path = Path(__file__).parent / "checkpoints/clusterer.pt" if path is None else path
+        if not path.exists():
+            raise FileNotFoundError(f"No checkpoints at {str(path)}.")
+        checkpoint = torch.load(path, map_location="cpu", weights_only=True)
+        try:
+            self._centers = checkpoint["centers"]
+        except RuntimeError as e:
+            print(f"Error while loading checkpoint from {str(path)}: {e}")

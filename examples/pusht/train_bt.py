@@ -14,7 +14,7 @@ from btransformer.loggers import (
 from btransformer.metrics import (
     AccumulatorMetric,
     ComposeMetric,
-    RelAbsErrorMetric,
+    AbsErrorMetric,
 )
 from btransformer.models import BehaviorTransformerMixedObs, PolicyGPT
 from btransformer.trainers import BTransformerTrainer
@@ -39,11 +39,11 @@ def main():
         AccumulatorMetric("train_loss", red="mean", name="Train Loss"),
         AccumulatorMetric("train_focal_loss", red="mean", name="Train Focal Loss"),
         AccumulatorMetric("train_multi_task_loss", red="mean", name="Train Multi-task Loss"),
-        RelAbsErrorMetric(
+        AbsErrorMetric(
             "train_pred_acts",
             "train_targ_acts",
             red="mean",
-            name="Rel. Abs. Error (Pred. vs Target Actions)",
+            name="Abs. Error (Pred. vs Target Actions)",
         ),
     ])
     loggers = ComposeLogger([

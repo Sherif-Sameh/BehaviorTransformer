@@ -1,11 +1,11 @@
+from .abs_error import AbsErrorMetric
 from .accumulator import AccumulatorMetric
 from .base import Metric
 from .compose import ComposeMetric
-from .rel_abs_error import RelAbsErrorMetric
 
 __all__ = [
+    "AbsErrorMetric",
     "AccumulatorMetric",
     "Metric",
     "ComposeMetric",
-    "RelAbsErrorMetric",
 ]

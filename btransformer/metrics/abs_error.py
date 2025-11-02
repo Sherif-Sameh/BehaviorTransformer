@@ -10,10 +10,10 @@ from torch import Tensor
 from btransformer.metrics.accumulator import AccumulatorMetric
 
 
-class RelAbsErrorMetric(AccumulatorMetric):
-    """Relative absolute error metric.
+class AbsErrorMetric(AccumulatorMetric):
+    """Absolute error metric.
 
-    Accumulates relative absolute errors between predictions and targets. Then, the metric value is
+    Accumulates absolute errors between predictions and targets. Then, the metric value is
     computed by reducing those accumulated values according to the chosen reduction method.
 
     Args:
@@ -32,9 +32,9 @@ class RelAbsErrorMetric(AccumulatorMetric):
     ):
         pred_name = pred_argname.replace('_', ' ').title()
         targ_name = targ_argname.replace('_', ' ').title()
-        name = f"Rel. Error of {pred_name} vs {targ_name}, ({red.title()})" \
+        name = f"Abs. Error of {pred_name} vs {targ_name}, ({red.title()})" \
             if name is None else name
-        super().__init__("rel_error_temp", red, name=name)
+        super().__init__("abs_error_temp", red, name=name)
         self.pred_argname = pred_argname
         self.targ_argname = targ_argname
     
@@ -51,7 +51,7 @@ class RelAbsErrorMetric(AccumulatorMetric):
         targ: Tensor | None = kwargs.get(self.targ_argname)
         if pred is None or targ is None:
             return  # There's nothing to update.
-        value = torch.abs(pred - targ) / (torch.abs(targ) + 1e-8)
+        value = torch.abs(pred - targ)
         if self.state is None:
             self.state = torch.zeros(1, device=value.device)
         self.state += value.sum()

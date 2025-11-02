@@ -10,6 +10,7 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch import Tensor
 
 from btransformer.clusterers.base import Clusterer
@@ -58,7 +59,7 @@ class BehaviorTransformer(Model):
         """Forward pass for the BTransformer model.
 
         Args:
-            obs_seq: (B, T, obs_dim) Tensor of observation sequences.
+            obs: (B, T, obs_dim) Tensor of observation sequences.
 
         Returns:
             tuple
@@ -76,7 +77,34 @@ class BehaviorTransformer(Model):
         bins_offsets = offsets.gather(2, bins_exp).squeeze(2)
         pred_acts = self.clusterer.decode(bins, bins_offsets)
         return pred_acts, logits, offsets
-
+    
+    @torch.no_grad
+    def inference(self, obs: Tensor, deterministic: bool = True) -> Tensor:
+        """Run inference using the BTransformer model.
+        
+        Args:
+            obs: (B, T, obs_dim) Tensor of observation sequences.
+            deterministic: Choose discrete action bins with highest probability deterministically.
+                Otherwise, sample from discrete action bins according to their probabilities.
+        
+        Returns:
+            (B, T, A) Tensor of predicted action sequences.
+        """
+        # Get logits and determine action bins
+        B, T = obs.shape[:2]
+        logits, offsets = self.policy(obs)
+        if deterministic:
+            bins = torch.argmax(logits, dim=-1)
+        else:
+            probs = F.softmax(logits, dim=-1)
+            bins = torch.multinomial(probs.view(B * T, -1), 1).view(B, T)
+        
+        # Combine discrete bins and corresponding offsets to get final predicitions
+        bins_exp = bins[:, :, None, None].expand(-1, -1, 1, self.act_dim)
+        bins_offsets = offsets.gather(2, bins_exp).squeeze(2)
+        pred_acts = self.clusterer.decode(bins, bins_offsets)
+        return pred_acts
+        
     def split_parameters(self) -> tuple[list[torch.nn.Parameter], list[torch.nn.Parameter]]:
         """
         Splits the model's parameters into two groups:
@@ -100,7 +128,11 @@ class BehaviorTransformer(Model):
                 provided.
         """
         path = self.DEFAULT_PATH if path is None else path
-        self.policy.save(path=path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint = {
+            "state_dict": self.state_dict(),
+        }
+        torch.save(checkpoint, path)
     
     def load(self, path: Path | None = None) -> None:
         """Load the model's state dict from the specified path.
@@ -110,7 +142,15 @@ class BehaviorTransformer(Model):
                 is checked for existing compatible checkpoints.
         """
         load_path = self.DEFAULT_PATH if path is None else path
-        self.policy.load(path=load_path)
+        if not load_path.exists():
+            raise FileNotFoundError(
+                f"No checkpoints at {str(path)} or default path {str(self.DEFAULT_PATH)}."
+            )
+        checkpoint = torch.load(path, map_location="cpu", weights_only=True)
+        try:
+            self.load_state_dict(checkpoint["state_dict"])
+        except RuntimeError as e:
+            print(f"Error while loading checkpoint from {str(load_path)}: {e}")
 
 
 class BehaviorTransformerMixedObs(BehaviorTransformer):
@@ -161,36 +201,25 @@ class BehaviorTransformerMixedObs(BehaviorTransformer):
         obs = torch.cat([img_features, prop_obs], dim=-1)
         return super().forward(obs)
 
-    def save(self, path: Path | None = None) -> None:
-        """Save the model's state dict to the specified path.
+    @torch.no_grad
+    def inference(self, img_obs: Tensor, prop_obs: Tensor, deterministic: bool = True) -> Tensor:
+        """Run inference using the BTransformer model with mixed observations.
         
         Args:
-            path: Optional path to save the model checkpoint. Default to `DEFAULT_PATH` if not
-                provided.
-        """
-        path = self.DEFAULT_PATH if path is None else path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        checkpoint = {
-            "state_dict_policy": self.policy.state_dict(),
-            "state_dict_img_encoder": self.img_encoder.state_dict(),
-        }
-        torch.save(checkpoint, path)
-    
-    def load(self, path: Path | None = None) -> None:
-        """Load the model's state dict from the specified path.
+            img_obs: (B, T, C, H, W) Tensor of image observation sequences.
+            prop_obs: (B, T, P) Tensor of proprioceptive observation sequences.
+            deterministic: Choose discrete action bins with highest probability deterministically.
+                Otherwise, sample from discrete action bins according to their probabilities.
         
-        Args:
-            path: Optional path to load the model checkpoint from. If not provided, `DEFAULT_PATH`
-                is checked for existing compatible checkpoints.
+        Returns:
+            (B, T, A) Tensor of predicted action sequences.
         """
-        load_path = self.DEFAULT_PATH if path is None else path
-        if not load_path.exists():
-            raise FileNotFoundError(
-                f"No checkpoints at {str(path)} or default path {str(self.DEFAULT_PATH)}."
-            )
-        checkpoint = torch.load(path, map_location="cpu", weights_only=True)
-        try:
-            self.policy.load_state_dict(checkpoint["state_dict_policy"])
-            self.img_encoder.load_state_dict(checkpoint["state_dict_img_encoder"])
-        except RuntimeError as e:
-            print(f"Error while loading checkpoint from {str(load_path)}: {e}")
+        B, T, C, H, W = img_obs.shape
+        assert prop_obs.shape[0] == B and prop_obs.shape[1] == T, \
+            "Batch size and sequence length of image and proprioceptive observations must match."
+        img_obs = img_obs.view(B * T, C, H, W)
+        with torch.no_grad():
+            img_features = self.img_encoder(img_obs)
+        img_features = img_features.view(B, T, -1)
+        obs = torch.cat([img_features, prop_obs], dim=-1)
+        return super().inference(obs, deterministic=deterministic)

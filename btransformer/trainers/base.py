@@ -31,6 +31,7 @@ class Trainer(ABC):
         self,
         n_epochs: int,
         learning_rate: float,
+        loss_key: str,
         metrics: ComposeMetric,
         loggers: ComposeLogger,
         dataloader: DataLoader,
@@ -41,6 +42,7 @@ class Trainer(ABC):
         Args:
             n_epochs: Number of epochs to train for.
             learning_rate: Learning rate used by optimizer.
+            loss_key: Key for the loss metric to use in determining model quality.
             metrics: Composed metrics to track during training and evaluation.
             loggers: Composed loggers for logging tracked metrics.
             dataloader: Dataloader for training dataset.

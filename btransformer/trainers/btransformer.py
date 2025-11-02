@@ -47,6 +47,7 @@ class BTransformerTrainer(Trainer):
         self,
         n_epochs: int,
         learning_rate: float,
+        loss_key: str,
         metrics: ComposeMetric,
         loggers: ComposeLogger,
         dataloader: DataLoader,
@@ -58,6 +59,7 @@ class BTransformerTrainer(Trainer):
         Args:
             n_epochs: Number of epochs to train for.
             learning_rate: Learning rate used by optimizer.
+            loss_key: Key for the loss metric to use in determining model quality.
             metrics: Composed metrics to track during training and evaluation.
             loggers: Composed loggers for logging tracked metrics.
             dataloader: Dataloader for training dataset.
@@ -66,7 +68,6 @@ class BTransformerTrainer(Trainer):
         """
         self.alpha = None
         loss_min = torch.tensor(torch.inf)
-        loss_argname = "train_loss" if test_dataloader is None else "eval_loss"
         # Setup AdamW optimizer with weight decay parameter groups
         decay, no_decay = self.model.split_parameters()
         optimizer = AdamW(
@@ -92,7 +93,7 @@ class BTransformerTrainer(Trainer):
                 loggers.log(epoch, metrics, reset=False)
             
             # Checkpoint best model so far
-            loss = metrics.compute()[loss_argname]
+            loss = metrics.compute()[loss_key]
             if loss < loss_min:
                 loss_min = loss
                 self.model.save(self.ckpt_path)

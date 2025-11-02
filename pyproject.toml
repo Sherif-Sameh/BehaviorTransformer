@@ -6,7 +6,6 @@ requires-python = ">=3.10,<3.13"
 dependencies = [
     "numpy >= 1.26.4",
     "matplotlib >= 3.8.4",
-    "fire >= 0.6.0",
     "torch >= 2.0.0",
     "torchvision",
     "pandas",

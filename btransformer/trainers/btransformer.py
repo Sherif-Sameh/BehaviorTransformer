@@ -26,6 +26,7 @@ class BTransformerTrainer(Trainer):
         model: BTransformer model to be trained.
         ckpt_path: Optional path to save/load model checkpoints.
         gamma: Exponent for the focal loss applied to the discrete action bin predictions.
+        max_grad_norm: Optional max norm for gradient clipping.
     """
     
     def __init__(
@@ -33,10 +34,12 @@ class BTransformerTrainer(Trainer):
         model: BehaviorTransformer,
         ckpt_path: Path | None = None,
         gamma: float = 2,
+        max_grad_norm: float | None = None,
     ) -> None:
         self.model = model
         self.ckpt_path = ckpt_path
         self.gamma = gamma
+        self.max_grad_norm = max_grad_norm
         # Balancing factor for focal and multi-task losses (initialized in first call to `_loss_fn`)
         self.alpha = None
 
@@ -115,6 +118,8 @@ class BTransformerTrainer(Trainer):
         target_bins, target_offsets = self.model.clusterer.encode(acts)
         loss, focal_loss, mt_loss = self._loss_fn(logits, offsets, target_bins, target_offsets)
         loss.backward()
+        if self.max_grad_norm is not None:
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.max_grad_norm)
         optimizer.step()
 
         # Update training metrics

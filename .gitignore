@@ -212,3 +212,6 @@ __marimo__/
 
 # CSV files
 *.csv
+
+# Datasets
+data/*

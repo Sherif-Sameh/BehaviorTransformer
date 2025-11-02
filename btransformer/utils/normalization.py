@@ -10,6 +10,28 @@ from numpy.typing import NDArray
 from torch import Tensor
 
 
+def normalize_prop_obs(
+    prop_obs: Tensor,
+    mean: Sequence[float],
+    std: Sequence[float],
+) -> Tensor:
+    """Normalizes a batch of proprioceptive observations given the mean and standard deviation.
+    
+    Args:
+        prop_obs: (B, P) Tensor of unnormalized proprioceptive observations.
+        mean: Sequence of means used for normalization.
+        std: Sequence of standard deviations used for normalization.
+    """
+    P = prop_obs.shape[-1]
+    assert len(mean) == P, f"Length of means {len(mean)} should match number of dimensions {P}."
+    assert len(std) == P, f"Length of stds {len(std)} should match number of dimensions {P}."
+    device = prop_obs.device
+    mean = torch.tensor(mean, device=device).view(1, P)
+    std = torch.tensor(std, device=device).view(1, P)
+    normalized_prop_obs = (prop_obs - mean) / (std + 1e-8)
+    return normalized_prop_obs
+
+
 def unnormalize_imgs(
     imgs: Tensor,
     mean: Sequence[float],

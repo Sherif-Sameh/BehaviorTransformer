@@ -1,3 +1,4 @@
+import itertools
 from pathlib import Path
 
 import gym_pusht  # noqa: F401
@@ -31,12 +32,13 @@ def main():
     policy = PolicyGPT(**config["policy"])
 
     # Initialize and load Behavior Transformer model
-    resnet = models.resnet18(weights=None)
+    resnet = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
     img_encoder = torch.nn.Sequential(*list(resnet.children())[:-1])
-    model = BehaviorTransformerMixedObs(policy, clusterer, img_encoder).to(device)
+    model = BehaviorTransformerMixedObs(policy, clusterer, img_encoder)
     model.load(
         Path(__file__).parents[2] / "models/pusht/btransformer.pt"
     )
+    model = model.to(device)
 
     # Setup observation transformations
     path = Path(__file__).parents[2] / "data/pusht"
@@ -62,15 +64,18 @@ def main():
     seq_len = config["policy"]["seq_len"]
     for i in range(4):
         # Prepare initial observation sequences
-        obs, _ = env.reset(seed=10)
+        obs, _ = env.reset(seed=0)
         img_obs = img_tf(obs["pixels"]).repeat((seq_len, 1, 1, 1)).unsqueeze(0)
-        prop_obs = prop_tf(obs["agent_pos"]).repeat((seq_len, 1)).unsqueeze(0)
-        
+        prop_obs = prop_tf(obs["agent_pos"]).repeat((seq_len, 1)).unsqueeze(0)    
+
         total_rewards = 0.0
-        while True:
-            # Get policy actions
-            action = model.inference(img_obs, prop_obs, deterministic=True)
-            action = unscale_actions(action[0], acts_low, acts_high)[-1]
+        for n in itertools.count():
+            if n >= (seq_len - 1): 
+                # Get policy actions
+                action = model.inference(img_obs, prop_obs, deterministic=True)
+                action = unscale_actions(action[0], acts_low, acts_high)[-1]
+            else:
+                action = env.action_space.sample()
 
             # Step environment and update observations
             obs, rew, terminated, trucated, _ = env.step(action)

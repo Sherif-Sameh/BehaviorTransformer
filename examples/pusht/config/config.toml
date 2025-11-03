@@ -29,9 +29,9 @@ n_blocks = 3        # Number of successive Transformer blocks in GPT policy
 embd_dim = 256      # Embedding dimension for Transformer blocks
 n_heads = 4         # Number of attention heads in 
 seq_len = 10        # Context/sequence-length for each sample and Transformer blocks
-embd_pdrop = 0.6    # Dropout probability for input embeddings
-attn_pdrop = 0.6    # Dropout probability for attention matrix
-proj_pdrop = 0.6    # Dropout probability for attention output projection
+embd_pdrop = 0.2    # Dropout probability for input embeddings
+attn_pdrop = 0.2    # Dropout probability for attention matrix
+proj_pdrop = 0.2    # Dropout probability for attention output projection
 
 
 # Trainer initialization parameters
@@ -43,5 +43,5 @@ max_grad_norm = 1.0     # Maximum allowed gradient norm before gradient norm cli
 # Trainer training parameters
 [trainer.training]
 n_epochs = 40           # Number of epochs to train Behavior Transformer model for
-learning_rate = 1e-4    # Learning rate used by the AdamW optimizer
-weight_decay = 1e-1     # Weight decay used by the AdamW optimizer
+learning_rate = 3e-4    # Learning rate used by the AdamW optimizer
+weight_decay = 1e-2     # Weight decay used by the AdamW optimizer

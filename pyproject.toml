@@ -36,3 +36,6 @@ pytest = ">=8.4"
 [tool.pixi.feature.pusht.pypi-dependencies]
 lerobot = ">=0.4"
 gym-pusht = ">=0.1.6"
+array_api_compat = ">= 1.12"
+pymunk = ">=6.6.0,<7.0.0"
+imageio = { version = ">=2.37.0,<3", extras = ["ffmpeg"] }

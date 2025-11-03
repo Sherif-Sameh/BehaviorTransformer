@@ -215,3 +215,7 @@ __marimo__/
 
 # Datasets
 data/*
+
+# Videos
+*.mp4
+*.mkv

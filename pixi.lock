@@ -109,6 +109,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/b9/48/adf56e05f81eac31edcfae45c90928f4ad50ef2e3ea72cb8376162a368f8/aiohttp-3.13.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/78/b6/6307fbef88d9b5ee7421e68d78a9f162e0da4900bc5f5793f6d3d0e34fb8/annotated_types-0.7.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/e0/b1/0542e0cab6f49f151a2d7a42400f84f706fc0b64e85dc1f56708b2e9fd37/array_api_compat-1.12.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/3a/2a/7cc015f5b9f5db42b7d48157e23356022889fc354a2813c15934b7cb5c0e/attrs-25.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ac/13/37737ef2193e83862ccacff23580c39de251da456a1bf0459e762cca273c/av-15.1.0-cp312-cp312-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/e4/37/af0d2ef3967ac0d6113837b44a4f0bfe1328c2b9763bd5b1744520e5cfed/certifi-2025.10.5-py3-none-any.whl
@@ -188,7 +189,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/a1/6b/83661fa77dcefa195ad5f8cd9af3d1a7450fd57cc883ad04d65446ac2029/pydantic-2.12.3-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f0/83/06d001f8043c336baea7fd202a9ac7ad71f87e1c55d8112c50b745c40324/pydantic_core-2.41.4-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/b9/f2/d31e6ad42d657af07be2ffd779190353f759a07b51232b9e1d724f2cda46/pygame-2.6.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/89/0a/a4a2e6d09f0cbbdca06c251865d8ec380f3c498c6b21df1c4113bf0596e2/pymunk-7.1.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/55/fc/d31a3773e79925c0ea263a8eed2df1507c548a92ea07e7e13536586528b8/pymunk-6.11.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/59/4f/ac3fa906ae8a375a536b12794128c5efacade9eaa917a35dfd27ce0c7400/pynput-1.8.1-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/10/5e/1aa9a93198c6b64513c9d7752de7422c06402de6600a8767da1524f9570b/pyparsing-3.2.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/07/bc/587a445451b253b285629263eb51c2d8e9bcea4fc97826266d186f96f558/pyserial-3.5-py2.py3-none-any.whl
@@ -441,6 +442,33 @@ packages:
   requires_dist:
   - typing-extensions>=4.0.0 ; python_full_version < '3.9'
   requires_python: '>=3.8'
+- pypi: https://files.pythonhosted.org/packages/e0/b1/0542e0cab6f49f151a2d7a42400f84f706fc0b64e85dc1f56708b2e9fd37/array_api_compat-1.12.0-py3-none-any.whl
+  name: array-api-compat
+  version: 1.12.0
+  sha256: a0b4795b6944a9507fde54679f9350e2ad2b1e2acf4a2408a098cdc27f890a8b
+  requires_dist:
+  - cupy ; extra == 'cupy'
+  - dask>=2024.9.0 ; extra == 'dask'
+  - jax ; extra == 'jax'
+  - numpy>=1.22 ; extra == 'numpy'
+  - torch ; extra == 'pytorch'
+  - sparse>=0.15.1 ; extra == 'sparse'
+  - ndonnx ; extra == 'ndonnx'
+  - furo ; extra == 'docs'
+  - linkify-it-py ; extra == 'docs'
+  - myst-parser ; extra == 'docs'
+  - sphinx ; extra == 'docs'
+  - sphinx-copybutton ; extra == 'docs'
+  - sphinx-autobuild ; extra == 'docs'
+  - array-api-strict ; extra == 'dev'
+  - dask[array]>=2024.9.0 ; extra == 'dev'
+  - jax[cpu] ; extra == 'dev'
+  - numpy>=1.22 ; extra == 'dev'
+  - pytest ; extra == 'dev'
+  - torch ; extra == 'dev'
+  - sparse>=0.15.1 ; extra == 'dev'
+  - ndonnx ; extra == 'dev'
+  requires_python: '>=3.10'
 - pypi: https://files.pythonhosted.org/packages/3a/2a/7cc015f5b9f5db42b7d48157e23356022889fc354a2813c15934b7cb5c0e/attrs-25.4.0-py3-none-any.whl
   name: attrs
   version: 25.4.0
@@ -454,7 +482,7 @@ packages:
 - pypi: ./
   name: btransformer
   version: 0.0.1
-  sha256: e5e7e1c2dbc07f5fca70921fd6bf725916f4542dacea3e03decd9d4ec13c07eb
+  sha256: ab732c681c050f92efba8d5f550f119b1d52ffc972778a2ce034998257da281d
   requires_dist:
   - numpy>=1.26.4
   - matplotlib>=3.8.4
@@ -2368,10 +2396,10 @@ packages:
   requires_dist:
   - colorama>=0.4.6 ; extra == 'windows-terminal'
   requires_python: '>=3.8'
-- pypi: https://files.pythonhosted.org/packages/89/0a/a4a2e6d09f0cbbdca06c251865d8ec380f3c498c6b21df1c4113bf0596e2/pymunk-7.1.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
+- pypi: https://files.pythonhosted.org/packages/55/fc/d31a3773e79925c0ea263a8eed2df1507c548a92ea07e7e13536586528b8/pymunk-6.11.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
   name: pymunk
-  version: 7.1.0
-  sha256: 6639d2e3242650e52227690931dbe43ab1aa29f24fb456aafb6b70b3027ea744
+  version: 6.11.1
+  sha256: e63c59f4194468c741b1cecbd550c59d3d297ce977159d524fd858a40edb01e3
   requires_dist:
   - cffi>=1.17.1 ; sys_platform != 'emscripten'
   - cffi>1.14.0 ; sys_platform == 'emscripten'
@@ -2382,7 +2410,7 @@ packages:
   - wheel ; extra == 'dev'
   - matplotlib ; extra == 'dev'
   - numpy ; extra == 'dev'
-  requires_python: '>=3.9'
+  requires_python: '>=3.8'
 - pypi: https://files.pythonhosted.org/packages/59/4f/ac3fa906ae8a375a536b12794128c5efacade9eaa917a35dfd27ce0c7400/pynput-1.8.1-py2.py3-none-any.whl
   name: pynput
   version: 1.8.1

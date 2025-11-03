@@ -1,8 +1,8 @@
 # Behavior Transformer
 
-A PyTorch-based implementation of the Behavior Transformer model for multi-modal behavior cloning for environments with continuous observation and action spaces.
+A PyTorch-based implementation of the Behavior Transformer model for multi-modal behavioral cloning for environments with continuous observation and action spaces.
 The Behavior Transformer approach was first proposed in the paper titled: [`Behavior Transformers: Cloning k modes with one stone`](https://arxiv.org/abs/2206.11251).
-To the best of my information and according to the paper, the original source code and datasets were never released publicly and remain proprietary.
+To the best of my knowledge and according to the paper, the original source code and datasets were never released publicly and remain proprietary.
 Therefore, this implementation was based solely on the description given in the original paper.
 
 ## Table of Contents
@@ -27,7 +27,7 @@ cd /path/to/BehaviorTransformer/repository
 ### Virtual Environment using Pixi (recommended)
 
 The recommended installation method is to install inside a Python virtual environment using the [`Pixi`](https://pixi.sh/latest/) package management tool.
-Firstly, install Pixi on Linux/macOS using the following single command.
+Firstly, install Pixi on Linux/macOS using the following command.
 ```bash
 curl -fsSL https://pixi.sh/install.sh | sh
 ```
@@ -53,7 +53,7 @@ pip install .
 This section provides a summary of the most defining features of the Behavior Transformer (BeT) approach. 
 
 ### Motivation and Overview
-The motivation behind the BeT was to come-up with a behavior cloning (BC) approach that could simultaneously achieve the three following goals for environments with continuous observation and action spaces.
+The motivation behind the BeT was to come-up with a behavioral cloning (BC) approach that could simultaneously achieve the three following goals for environments with continuous observation and action spaces.
 
 1. Accurately model multi-modal behavior in datasets rather than capturing only a single mode or an averaging of all modes.
 2. Relax the Markov assumption that only the prior state is needed for action prediction.
@@ -67,12 +67,12 @@ This approach facilitates learning mutli-modal behavior through the discrete bin
 ### Action Binning, Encoding and Decoding
 
 To determine the locations of the discrete action bins in the continuous action space, a clustering approach is applied to all actions available in the dataset prior to policy training.
-In the BeT approach, K-Means clustering is used for this purpose with the number of clusters being a used-define hyperparameter.
+In the BeT approach, K-Means clustering is used for this purpose with the number of clusters being a user-defined hyperparameter.
 After clustering is done, the cluster center locations $\mathbf{c}_{0, 1, \cdots, k-1}$ are stored for use in the action encoding and decoding processes.
 
 The encoding process takes a continuous action $\mathbf{a}\_{t}$ and factors it into a discrete bin $\left[\mathbf{a}\_{t} \right] = argmin\_i d\left(\mathbf{a}\_{t},  \mathbf{c}\_i \right)$, where $d(\cdot, \cdot)$ is a distance function, and a continuous offset $\left \langle \mathbf{a}\_{t} \right \rangle = \mathbf{a}\_{t} - \mathbf{c}\_{\left[\mathbf{a}\_{t} \right]}$.
 The decoding process follows the opposite pattern.
-Given a discrete bin $\left[\mathbf{a}\_{t} \right]$ and its corresponding offset $\left \langle \mathbf{a}\_{t} \right \rangle$, the full actions $\mathbf{a}\_{t} = \mathbf{c}\_{\left[\mathbf{a}\_{t} \right]} + \left \langle \mathbf{a}\_{t} \right \rangle$ is returned.
+Given a discrete bin $\left[\mathbf{a}\_{t} \right]$ and its corresponding offset $\left \langle \mathbf{a}\_{t} \right \rangle$, the full action $\mathbf{a}\_{t} = \mathbf{c}\_{\left[\mathbf{a}\_{t} \right]} + \left \langle \mathbf{a}\_{t} \right \rangle$ is returned.
 
 
 ### Loss Functions

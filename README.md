@@ -27,12 +27,12 @@ cd /path/to/BehaviorTransformer/repository
 ### Virtual Environment using Pixi (recommended)
 
 The recommended installation method is to install inside a Python virtual environment using the [`Pixi`](https://pixi.sh/latest/) package management tool.
-Firstly, simply install Pixi on Linux/macOS using the following command.
+Firstly, install Pixi on Linux/macOS using the following single command.
 ```bash
 curl -fsSL https://pixi.sh/install.sh | sh
 ```
 
-Then, to setup the virtual environment and install all package dependencies, simple run the following command inside the directory of the `BehaviorTransformer` repository.
+Then, to setup the virtual environment and install all package dependencies, simply run the following command inside the directory of the `BehaviorTransformer` repository.
 ```bash
 pixi install
 ```
@@ -60,7 +60,7 @@ The motivation behind the BeT was to come-up with a behavior cloning (BC) approa
 3. Avoid the slow iterative inference process of Diffusion-based generative policies.
 
 Therefore, a small GPT-based sequence-to-sequence model with masked causal self-attention was chosen to model the policy's behavior.
-The model receives a sequence of observations $(\mathbf{o}_t, \mathbf{o}_{t-1}, \cdots, \mathbf{o}_{t-h+1})$ and predicts a corresponding sequence of actions $(\mathbf{a}_t, \mathbf{a}_{t-1}, \cdots, \mathbf{a}_{t-h+1})$.
+The model receives a sequence of observations $(\mathbf{o}_{t}, \mathbf{o}_{t-1}, \cdots, \mathbf{o}_{t-h+1})$ and predicts a corresponding sequence of actions $(\mathbf{a}_{t}, \mathbf{a}_{t-1}, \cdots, \mathbf{a}_{t-h+1})$.
 However, to perserve the multi-modality of the GPT-based policy, continuous actions are broken down into two components: a discrete action bin (i.e. a token) + a continuous offset.
 This approach facilitates learning mutli-modal behavior through the discrete bins and retains fine-grained control through the added actions residuals to the location of each action bin.
 
@@ -70,16 +70,16 @@ To determine the locations of the discrete action bins in the continuous action 
 In the BeT approach, K-Means clustering is used for this purpose with the number of clusters being a used-define hyperparameter.
 After clustering is done, the cluster center locations $\mathbf{c}_{0, 1, \cdots, k-1}$ are stored for use in the action encoding and decoding processes.
 
-The encoding process takes a continuous action $\mathbf{a}_t$ and factors it into a discrete bin $\left[\mathbf{a}_t \right] = \argmin_i d\left(\mathbf{a}_t,  \mathbf{c}_i \right)$, where $d(\cdot, \cdot)$ is a distance function, and a continuous offset $\left \langle \mathbf{a}_t \right \rangle = \mathbf{a}_t - \mathbf{c}_{\left[\mathbf{a}_t \right]}$.
+The encoding process takes a continuous action $\mathbf{a}_{t}$ and factors it into a discrete bin $\left[\mathbf{a}_{t} \right] = \argmin_i d\left(\mathbf{a}_{t},  \mathbf{c}_i \right)$, where $d(\cdot, \cdot)$ is a distance function, and a continuous offset $\left \langle \mathbf{a}_{t} \right \rangle = \mathbf{a}_{t} - \mathbf{c}_{\left[\mathbf{a}_{t} \right]}$.
 The decoding process follows the opposite pattern.
-Given a discrete bin $\left[\mathbf{a}_t \right]$ and its corresponding offset $\left \langle \mathbf{a}_t \right \rangle$, the full actions $\mathbf{a}_t = \mathbf{c}_{\left[\mathbf{a}_t \right]} + \left \langle \mathbf{a}_t \right \rangle$ is returned.
+Given a discrete bin $\left[\mathbf{a}_{t} \right]$ and its corresponding offset $\left \langle \mathbf{a}_{t} \right \rangle$, the full actions $\mathbf{a}_{t} = \mathbf{c}_{\left[\mathbf{a}_{t} \right]} + \left \langle \mathbf{a}_{t} \right \rangle$ is returned.
 
 
 ### Loss Functions
 
 The BeT model is trained using a combination of two loss functions.
 The first is a Focal Loss $\mathcal{L}_{focal}$ used to learn the discrete action bins.
-The focal loss is a modification to the Cross-Entropy Loss such that $\mathcal{L}_{focal} = -(1 - p_t)^\gamma \log(p_t)$, where $p_t$ is the predicted probability of the ground truth class. The second term in the combined loss function, named as the multi-task loss $\mathcal{L}_{multi-task}$, handles the fitting of the continuous offsets of the model.
+The focal loss is a modification to the Cross-Entropy Loss such that $\mathcal{L}_{focal} = -(1 - p_{t})^\gamma \log(p_{t})$, where $p_{t}$ is the predicted probability of the ground truth class. The second term in the combined loss function, named as the multi-task loss $\mathcal{L}_{multi-task}$, handles the fitting of the continuous offsets of the model.
 The multi-task loss is simply a MSE loss between the true action offset and the predicted offset corresponding to the true action bin.
 
 These two losses $\mathcal{L}_{focal}$ and $\mathcal{L}_{multi-task}$ are combined together as $\mathcal{L}$ = $\mathcal{L}_{focal} + \alpha \mathcal{L}_{multi-task}$, where $\alpha$ is a scalar constant determined during the very first policy update to make the two losses of equal magnitude.

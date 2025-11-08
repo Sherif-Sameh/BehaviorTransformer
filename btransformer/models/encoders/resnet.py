@@ -7,6 +7,7 @@ The models are adapted according to the description given in:
 <https://arxiv.org/abs/2303.04137>
 """
 
+from pathlib import Path
 from typing import Callable, Literal
 
 import torch.nn as nn
@@ -14,10 +15,11 @@ import torchvision.models.resnet as resnet
 from torch import Tensor
 from torchvision.models.resnet import ResNet, WeightsEnum
 
+from btransformer.models.base import Model
 from btransformer.modules.encoders import SpatialSoftMax
 
 
-class ResNetDP(nn.Module):
+class ResNetDP(Model):
     """Modified ResNet image encoders from
     `Diffusion Policy: Visuomotor Policy Learning via Action Diffusion`
     <https://arxiv.org/abs/2303.04137>.
@@ -33,6 +35,7 @@ class ResNetDP(nn.Module):
         use_group_norm: Replace BatchNorm layers with GroupNorm of fixed group size.
         group_size: Group size to use for GroupNorm layers if applicable.
     """
+    DEFAULT_PATH = Path(__file__).parent / "checkpoints/ResNet.pt"
 
     def __init__(
         self,
@@ -92,3 +95,42 @@ class ResNetDP(nn.Module):
         """
         features = self.encoder(x)
         return features
+
+    def split_parameters(self) -> tuple[list[nn.Parameter], list[nn.Parameter]]:
+        """Splits the model's parameters into two groups:
+        1. Parameters to apply weight decay (e.g., nn.Conv2d.weight).
+        2. Parameters to exclude from weight decay (e.g., nn.Conv2d.bias, nn.BatchNorm.weight).
+
+        Returns:
+            tuple
+            - decay: List of parameters to apply weight decay.
+            - no_decay: List of parameters to exclude from weight decay.
+        """
+        decay, no_decay = set(), set()
+        whitelist_weight_modules = (nn.Conv2d, )
+        blacklist_weight_modules = (nn.BatchNorm2d, nn.GroupNorm)
+        # Iterate over all modules and store parameter names in the appropriate set
+        for name, module in self.named_modules():
+            for pname, _ in module.named_parameters(recurse=False):
+                full_pname = f"{name}.{pname}" if name else pname
+                if pname.endswith("weight"):
+                    if isinstance(module, whitelist_weight_modules):
+                        decay.add(full_pname)
+                    elif isinstance(module, blacklist_weight_modules):
+                        no_decay.add(full_pname)
+                elif pname.endswith("bias"):
+                    no_decay.add(full_pname)
+        
+        # Validate that every parameter has been considered
+        param_dict = {name: param for (name, param) in self.named_parameters()}
+        inter_params = decay & no_decay
+        union_params = decay | no_decay
+        assert len(inter_params) == 0, \
+            f"Parameters {str(inter_params)} made it into both sets!"
+        assert len(param_dict.keys() - union_params) == 0, \
+            f"Parameters {str(param_dict.keys() - union_params)} were missed from both sets!"
+        
+        # Create final parameter lists from decay/no_decay sets
+        decay = [param_dict[name] for name in sorted(list(decay))]
+        no_decay = [param_dict[name] for name in sorted(list(no_decay))]
+        return decay, no_decay

@@ -5,6 +5,7 @@ Contains base abstract class for trainable models in the btransformer library.
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+import torch
 import torch.nn as nn
 
 
@@ -16,6 +17,7 @@ class Model(ABC, nn.Module):
     those that should be regularized with weight decay and those that should not. In addition to
     this, models are required to provide methods for saving and loading model checkpoints.
     """
+    DEFAULT_PATH = Path(__file__).parent / "checkpoints/model.pt"
 
     @abstractmethod
     def split_parameters(self) -> tuple[list[nn.Parameter], list[nn.Parameter]]:
@@ -30,22 +32,34 @@ class Model(ABC, nn.Module):
         """
         pass
 
-    @abstractmethod
     def save(self, path: Path | None = None) -> None:
         """Save the model's state dict to the specified path.
         
         Args:
-            path: Optional path to save the model checkpoint. Should default to a 'checkpoints'
-                directory within the 'models' directory if not provided.
+            path: Optional path to save the model checkpoint. Defaults to `DEFAULT_PATH` if not
+                provided.
         """
-        pass
+        path = self.DEFAULT_PATH if path is None else path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        checkpoint = {
+            "state_dict": self.state_dict(),
+        }
+        torch.save(checkpoint, path)
 
-    @abstractmethod
     def load(self, path: Path | None = None) -> None:
         """Load the model's state dict from the specified path.
         
         Args:
-            path: Optional path to load the model checkpoint from. If not provided, method should
-                default to looking inside a 'checkpoints' directory within the 'models' directory.
+            path: Optional path to load the model checkpoint from. If not provided, `DEFAULT_PATH`
+                is checked for existing compatible checkpoints.
         """
-        pass
+        load_path = self.DEFAULT_PATH if path is None else path
+        if not load_path.exists():
+            raise FileNotFoundError(
+                f"No checkpoints at {str(path)} or default path {str(self.DEFAULT_PATH)}."
+            )
+        checkpoint = torch.load(path, map_location="cpu", weights_only=True)
+        try:
+            self.load_state_dict(checkpoint["state_dict"])
+        except RuntimeError as e:
+            print(f"Error while loading checkpoint from {str(load_path)}: {e}")

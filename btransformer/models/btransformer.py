@@ -9,7 +9,6 @@ The Behavior Transformer model was proposed in the paper:
 from pathlib import Path
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
@@ -120,38 +119,6 @@ class BehaviorTransformer(Model):
         decay, no_decay = self.policy.split_parameters()
         return decay, no_decay
     
-    def save(self, path: Path | None = None) -> None:
-        """Save the model's state dict to the specified path.
-        
-        Args:
-            path: Optional path to save the model checkpoint. Default to `DEFAULT_PATH` if not
-                provided.
-        """
-        path = self.DEFAULT_PATH if path is None else path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        checkpoint = {
-            "state_dict": self.state_dict(),
-        }
-        torch.save(checkpoint, path)
-    
-    def load(self, path: Path | None = None) -> None:
-        """Load the model's state dict from the specified path.
-        
-        Args:
-            path: Optional path to load the model checkpoint from. If not provided, `DEFAULT_PATH`
-                is checked for existing compatible checkpoints.
-        """
-        load_path = self.DEFAULT_PATH if path is None else path
-        if not load_path.exists():
-            raise FileNotFoundError(
-                f"No checkpoints at {str(path)} or default path {str(self.DEFAULT_PATH)}."
-            )
-        checkpoint = torch.load(path, map_location="cpu", weights_only=True)
-        try:
-            self.load_state_dict(checkpoint["state_dict"])
-        except RuntimeError as e:
-            print(f"Error while loading checkpoint from {str(load_path)}: {e}")
-
 
 class BehaviorTransformerMixedObs(BehaviorTransformer):
     """Behavior Transformer (BTransformer) model for multi-modal behavior cloning with mixed
@@ -161,8 +128,6 @@ class BehaviorTransformerMixedObs(BehaviorTransformer):
     Image observations are encoded separately using an image encoder then concatenated with
     the proprioceptive observations before being passed to the GPT-based policy network.
 
-    Note: The image encoder is assumed to be a pre-trained model with frozen weights.
-
     Args:
         policy: GPT-based policy model for encoding mixed observations and predicting actions.
         clusterer: Clustering module for clustering actions, then encoding/decoding them from
@@ -171,12 +136,10 @@ class BehaviorTransformerMixedObs(BehaviorTransformer):
     """
     DEFAULT_PATH = Path(__file__).parent / "checkpoints/BTransformerMixedObs.pt"
 
-    def __init__(self, policy: PolicyGPT, clusterer: Clusterer, img_encoder: nn.Module):
+    def __init__(self, policy: PolicyGPT, clusterer: Clusterer, img_encoder: Model):
         super().__init__(policy, clusterer)
         self.img_encoder = img_encoder
-        for param in self.img_encoder.parameters():
-            param.requires_grad = False  # Ensure image encoder weights are frozen
-    
+        
     def forward(self, img_obs: Tensor, prop_obs: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         """Forward pass for the BTransformer model with mixed observations.
 
@@ -195,8 +158,7 @@ class BehaviorTransformerMixedObs(BehaviorTransformer):
         assert prop_obs.shape[0] == B and prop_obs.shape[1] == T, \
             "Batch size and sequence length of image and proprioceptive observations must match."
         img_obs = img_obs.view(B * T, C, H, W)
-        with torch.no_grad():
-            img_features = self.img_encoder(img_obs)
+        img_features = self.img_encoder(img_obs)
         img_features = img_features.view(B, T, -1)
         obs = torch.cat([img_features, prop_obs], dim=-1)
         return super().forward(obs)
@@ -218,8 +180,26 @@ class BehaviorTransformerMixedObs(BehaviorTransformer):
         assert prop_obs.shape[0] == B and prop_obs.shape[1] == T, \
             "Batch size and sequence length of image and proprioceptive observations must match."
         img_obs = img_obs.view(B * T, C, H, W)
-        with torch.no_grad():
-            img_features = self.img_encoder(img_obs)
+        img_features = self.img_encoder(img_obs)
         img_features = img_features.view(B, T, -1)
         obs = torch.cat([img_features, prop_obs], dim=-1)
         return super().inference(obs, deterministic=deterministic)
+
+    def split_parameters(self) -> tuple[list[torch.nn.Parameter], list[torch.nn.Parameter]]:
+        """
+        Splits the model's parameters into two groups:
+        1. Parameters to apply weight decay (e.g., nn.Linear.weight).
+        2. Parameters to exclude from weight decay (e.g., nn.Linear.bias, nn.LayerNorm.weight).
+
+        Returns:
+            tuple
+            - decay: List of parameters to apply weight decay.
+            - no_decay: List of parameters to exclude from weight decay.
+        """
+        # Get policy and image encoder parameters and combine them
+        decay_policy, no_decay_policy = self.policy.split_parameters()
+        decay_encoder, no_decay_encoder = self.img_encoder.split_parameters()
+        decay = decay_policy + decay_encoder
+        no_decay = no_decay_policy + no_decay_encoder
+        return decay, no_decay
+    

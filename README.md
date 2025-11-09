@@ -1,5 +1,9 @@
 # Behavior Transformer
 
+<p align="center">
+  <img src="images/pusht.gif" alt="PushT environment" height="300"/>
+</p>
+
 A PyTorch-based implementation of the Behavior Transformer model for multi-modal behavioral cloning for environments with continuous observation and action spaces.
 The Behavior Transformer approach was first proposed in the paper titled: [`Behavior Transformers: Cloning k modes with one stone`](https://arxiv.org/abs/2206.11251).
 To the best of my knowledge and according to the paper, the original source code and datasets were never released publicly and remain proprietary.
@@ -106,10 +110,6 @@ This section provides a summary of the main modules and sub-modules in this Pyth
 
 ## PushT Example
 
-<p align="center">
-  <img src="images/pusht.gif" alt="PushT environment" height="300"/>
-</p>
-
 An example of training and deploying a BeT model is provided using the [`PushT`](https://github.com/huggingface/gym-pusht) Gymnasium environment.
 The dataset used for training is retrieved from the [`LeRobot`](https://huggingface.co/lerobot) project on Hugging Face at this [`link`](https://huggingface.co/datasets/lerobot/pusht).
 
@@ -134,18 +134,9 @@ python examples/pusht/train_bt.py
 Lastly, to visualize the trained policy, we can run it inside the actual Gymnasium-based environment.
 By running the following script, the policy is loaded and ran in the environment for four episodes which are recorded and stored in a single video file inside the same [`pusht`](examples/pusht) examples directory.
 
-**Important Note**
-
-Currently although the BeT seems to fit perfectly to the available dataset, its performance inside the Gymnasium environment does not reflect that. 
-This could be down to multiple reasons but the two most likely culprits in my opinion are the pre-trained image encoder and model/training hyperparameters used. 
-
-For the image encoder, we use the pre-trained weights for the ResNet-18 models of ImageNet from Torchvision. 
-The PushT environment looks nothing like ImageNet and these deep CNN models have been shown in the past to not work as expected in RL environments. 
-A much better approach should be pre-training a smaller CNN model using any self-supervised training approach on the PushT environment and using that instead.
-
-Meanwhile, the configuration in the [`config.toml`](examples/pusht/config/config.toml) is loosely based on the hyperparameters used in the original BeT paper.
-However, since this is a different benchmark to any of the used ones, these hyperparameters are most likely very sub-optimal and should be tuned using any hyperparameter optimization approach. 
-
+```bash
+python examples/pusht/run_bt.py --seed 0 --n_eps 2
+```
 
 ## References
 

@@ -2,7 +2,6 @@ from pathlib import Path
 
 import toml
 import torch
-import torchvision.models as models
 from torch.utils.data import DataLoader
 
 from btransformer.clusterers import KMeansClusterer
@@ -12,13 +11,14 @@ from btransformer.loggers import (
     CSVLogger,
 )
 from btransformer.metrics import (
+    AbsErrorMetric,
     AccumulatorMetric,
     ComposeMetric,
-    AbsErrorMetric,
 )
 from btransformer.models import BehaviorTransformerMixedObs, PolicyGPT
+from btransformer.models.encoders import ResNetDP
 from btransformer.trainers import BTransformerTrainer
-from btransformer.utils import seed_everything
+from btransformer.utils import convert_transforms, seed_everything
 
 from dataset import PushTDataset
 
@@ -28,6 +28,7 @@ def main():
     seed_everything(seed=0)
     path = Path(__file__).parent / "config/config.toml"
     config = toml.load(path)
+    config["dataset"]["transform"] = convert_transforms(config["dataset"]["transform"])
 
     # Initialize dataset and dataloader
     path = Path(__file__).parents[2] / "data/pusht"
@@ -51,17 +52,16 @@ def main():
         CSVLogger(Path(__file__).parent / "logs/logs.csv", interval=1, filter=None),
     ])
 
-    # Initialize KMeans clusterer and PolicyGPT model
+    # Initialize KMeans clusterer, PolicyGPT and ResNet models
     clusterer = KMeansClusterer(**config["clusterer"])
     clusterer.load(
         Path(__file__).parents[2] / "models/pusht/kmeans.pt"
     )
     policy = PolicyGPT(**config["policy"])
+    img_encoder = ResNetDP(**config["encoder"])
 
     # Initialize Behavior Transformer model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    resnet = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
-    img_encoder = torch.nn.Sequential(*list(resnet.children())[:-1])
     model = BehaviorTransformerMixedObs(policy, clusterer, img_encoder).to(device)
 
     # Initialize trainer and begin training

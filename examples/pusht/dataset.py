@@ -6,9 +6,9 @@ from pathlib import Path
 from functools import partial
 
 import torch
+import torchvision.transforms.v2 as tf
 from lerobot.datasets.lerobot_dataset import LeRobotDataset
 from torch import Tensor
-from torchvision.transforms.v2 import Normalize
 
 from btransformer.utils import normalize_prop_obs, rescale_actions
 
@@ -24,20 +24,20 @@ class PushTDataset:
     
     Args:
         path: Path for storing PushT dataset.
+        transform: Image transform to apply to the image observations.
         seq_len: Length of sequences to extract from dataset. Defaults to 1.
         stride: Stride for sampling sequences. Defaults to 1.
         device: Device to move tensors to.
     """
-    IMG_MEAN = (0.485, 0.456, 0.406)  # ImageNet
-    IMG_STD = (0.229, 0.224, 0.225)   # ImageNet
-    PROP_MEAN = (0.4475, 0.5729)
-    PROP_STD = (0.1989, 0.1885)
+    PROP_MEAN = (229.1110, 293.3112)
+    PROP_STD = (101.8567,  96.4914)
     ACTION_LOW = (0.0, 0.0)
     ACTION_HIGH = (512.0, 512.0)
 
     def __init__(
         self,
         path: Path,
+        transform: tf.Transform = tf.Identity(),
         seq_len: int = 1,
         stride: int = 1,
         device: str = "cpu",
@@ -52,11 +52,13 @@ class PushTDataset:
         self.dataset = LeRobotDataset("lerobot/pusht", root=path)
         
         # Set transforms for observations and actions
-        self.img_tf = Normalize(mean=self.IMG_MEAN, std=self.IMG_STD)
-        self.prop_tf = lambda x: partial(
+        self.img_tf = transform
+        self.prop_tf = partial(
             normalize_prop_obs, mean=self.PROP_MEAN, std=self.PROP_STD
-        )(x / 512.)
-        self.action_tf = partial(rescale_actions, acts_low=self.ACTION_LOW, acts_high=self.ACTION_HIGH)
+        )
+        self.action_tf = partial(
+            rescale_actions, acts_low=self.ACTION_LOW, acts_high=self.ACTION_HIGH
+        )
 
         # Calculate dataset metadata needed for sampling
         eps_lens = self._get_episode_lens()

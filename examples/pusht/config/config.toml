@@ -2,9 +2,18 @@
 
 # Dataset parameters
 [dataset]
-seq_len = 10        # Context/sequence-length for each sample and Transformer blocks
-stride = 1          # Stride for sampling sequences
-device = "cuda"     # Device to move observations and actions to after sampling
+seq_len = 4             # Context/sequence-length for each sample and Transformer blocks
+stride = 1              # Stride for sampling sequences
+device = "cuda"         # Device to move observations and actions to after sampling
+[[dataset.transform]]   # Image transforms to apply to image observations
+type = "RandomCrop"
+[dataset.transform.kwargs]
+size = [84, 84]
+[[dataset.transform]]
+type = "Normalize"
+[dataset.transform.kwargs]
+mean = [0.9720, 0.9806, 0.9775]
+std = [1.0, 1.0, 1.0]
 
 
 # Dataloading parameters
@@ -15,33 +24,42 @@ shuffle = true      # Shuffle the dataset when sampling batches
 
 # K-Means clusterer parameters
 [clusterer]
-n_clusters = 32     # Number of clusters/discrete action bins
-max_iters = 100     # Maximum number of iterations for determining cluster centers
+n_clusters = 4      # Number of clusters/discrete action bins
+max_iters = 500     # Maximum number of iterations for determining cluster centers
 tol = 1e-4          # Tolerance for clustering early stopping if centers don't change 
 
 
 # GPT-based policy parameters
 [policy]
-obs_dim = 514       # Observation dimension: image features (512) + prop. observations (2)
+obs_dim = 1026      # Observation dimension: image features (1024) + prop. observations (2)
 act_dim = 2         # Action dimension
-n_bins = 32         # Number of clusters/discrete action bins
+n_bins = 4          # Number of clusters/discrete action bins
 n_blocks = 3        # Number of successive Transformer blocks in GPT policy
 embd_dim = 256      # Embedding dimension for Transformer blocks
 n_heads = 4         # Number of attention heads in 
-seq_len = 10        # Context/sequence-length for each sample and Transformer blocks
+seq_len = 4         # Context/sequence-length for each sample and Transformer blocks
 embd_pdrop = 0.2    # Dropout probability for input embeddings
 attn_pdrop = 0.2    # Dropout probability for attention matrix
 proj_pdrop = 0.2    # Dropout probability for attention output projection
 
 
+# ResNet image encoder parameters
+[encoder]
+model = "resnet18"          # ResNet base model used for image encoder 
+pretrained = false          # Load ImageNet pre-trained weights
+use_spatial_softmax = true  # Replace global average pooling with spatial soft-max
+use_group_norm = true       # Replace BatchNorm with GroupNorm
+group_size = 16             # Group size for GroupNorm layers
+
+
 # Trainer initialization parameters
 [trainer.init]
 gamma = 2.0             # Exponent for the (1 - p(t)) term in the focal loss function
-max_grad_norm = 1.0     # Maximum allowed gradient norm before gradient norm clipping
+max_grad_norm = 2.5     # Maximum allowed gradient norm before gradient norm clipping
 
 
 # Trainer training parameters
 [trainer.training]
-n_epochs = 40           # Number of epochs to train Behavior Transformer model for
-learning_rate = 3e-4    # Learning rate used by the AdamW optimizer
-weight_decay = 1e-2     # Weight decay used by the AdamW optimizer
+n_epochs = 30           # Number of epochs to train Behavior Transformer model for
+learning_rate = 1e-4    # Learning rate used by the AdamW optimizer
+weight_decay = 1e-3     # Weight decay used by the AdamW optimizer

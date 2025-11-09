@@ -1,4 +1,4 @@
-import itertools
+from argparse import ArgumentParser
 from pathlib import Path
 
 import gym_pusht  # noqa: F401
@@ -6,34 +6,39 @@ import gymnasium
 import imageio
 import toml
 import torch
-import torchvision.models as models
+import torchvision.transforms.v2 as tf
 from gymnasium.wrappers.numpy_to_torch import NumpyToTorch
 from torch import Tensor
 
 from btransformer.clusterers import KMeansClusterer
 from btransformer.models import BehaviorTransformerMixedObs, PolicyGPT
-from btransformer.utils import seed_everything, unscale_actions
+from btransformer.models.encoders import ResNetDP
+from btransformer.utils import (
+    convert_transforms,
+    seed_everything,
+    unscale_actions,
+)
 
 from dataset import PushTDataset
 
 
-def main():
+def main(seed: int, n_eps: int):
     seed_everything(seed=0)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Recover model configuration
     path = Path(__file__).parent / "config/config.toml"
     config = toml.load(path)
+    config["dataset"]["transform"] = convert_transforms(config["dataset"]["transform"])
 
-    # Initialize KMeans clusterer and PolicyGPT model
+    # Initialize KMeans clusterer, PolicyGPT and ResNet models
     clusterer = KMeansClusterer(**config["clusterer"])
     clusterer.load(
         Path(__file__).parents[2] / "models/pusht/kmeans.pt"
     )
     policy = PolicyGPT(**config["policy"])
+    img_encoder = ResNetDP(**config["encoder"])
 
     # Initialize and load Behavior Transformer model
-    resnet = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
-    img_encoder = torch.nn.Sequential(*list(resnet.children())[:-1])
     model = BehaviorTransformerMixedObs(policy, clusterer, img_encoder)
     model.load(
         Path(__file__).parents[2] / "models/pusht/btransformer.pt"
@@ -43,6 +48,7 @@ def main():
     # Setup observation transformations
     path = Path(__file__).parents[2] / "data/pusht"
     dataset = PushTDataset(path, **config["dataset"])
+    dataset.img_tf.transforms[0] = tf.CenterCrop((84, 84))
     acts_low, acts_high = dataset.ACTION_LOW, dataset.ACTION_HIGH
     def img_tf(x: Tensor) -> Tensor:
         return dataset.img_tf(x.permute(2, 0, 1).float() / 255.)
@@ -62,20 +68,17 @@ def main():
 
     # Run policy in environment
     seq_len = config["policy"]["seq_len"]
-    for i in range(4):
+    for i in range(n_eps):
         # Prepare initial observation sequences
-        obs, _ = env.reset(seed=0)
+        obs, _ = env.reset(seed=seed)
         img_obs = img_tf(obs["pixels"]).repeat((seq_len, 1, 1, 1)).unsqueeze(0)
         prop_obs = prop_tf(obs["agent_pos"]).repeat((seq_len, 1)).unsqueeze(0)    
 
         total_rewards = 0.0
-        for n in itertools.count():
-            if n >= (seq_len - 1): 
-                # Get policy actions
-                action = model.inference(img_obs, prop_obs, deterministic=True)
-                action = unscale_actions(action[0], acts_low, acts_high)[-1]
-            else:
-                action = env.action_space.sample()
+        while True:
+            # Get policy actions
+            action = model.inference(img_obs, prop_obs, deterministic=False)
+            action = unscale_actions(action[0], acts_low, acts_high)[-1]
 
             # Step environment and update observations
             obs, rew, terminated, trucated, _ = env.step(action)
@@ -94,4 +97,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = ArgumentParser(prog="Run BeT")
+    parser.add_argument("-s", "--seed", type=int, default=0)
+    parser.add_argument("-n", "--n_eps", type=int, default=4)
+    
+    args = parser.parse_args()
+    main(seed=args.seed, n_eps=args.n_eps)

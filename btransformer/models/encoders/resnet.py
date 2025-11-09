@@ -118,7 +118,7 @@ class ResNetDP(Model):
                         decay.add(full_pname)
                     elif isinstance(module, blacklist_weight_modules):
                         no_decay.add(full_pname)
-                elif pname.endswith("bias"):
+                elif pname.endswith("bias") or isinstance(module, SpatialSoftMax):
                     no_decay.add(full_pname)
         
         # Validate that every parameter has been considered

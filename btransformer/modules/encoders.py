@@ -53,7 +53,7 @@ class SpatialSoftMax(nn.Module):
         probs = F.softmax(logits, dim=-1)
 
         # Get grid coordinates and computed their expected values according to probs
-        x_coords, y_coords = self._get_grid_coords(x)
+        x_coords, y_coords = self._get_grid_coords(x.view(B, C, H, W))
         x_coords = torch.sum(x_coords * probs, dim=-1).view(B, C)
         y_coords = torch.sum(y_coords * probs, dim=-1).view(B, C)
 

@@ -5,6 +5,7 @@ from .normalization import (
     unscale_actions,
 )
 from .utils import (
+    convert_transforms,
     seed_everything,
     sqr_l2_norm,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "rescale_actions",
     "unnormalize_imgs",
     "unscale_actions",
+    "convert_transforms",
     "seed_everything",
     "sqr_l2_norm",
 ]
